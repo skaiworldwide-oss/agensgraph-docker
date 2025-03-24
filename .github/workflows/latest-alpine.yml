@@ -31,6 +31,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.SUB_DIR }}alpine/
+          context: ${{ env.SUB_DIR }}alpine3.21/
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:latest  
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:latest
