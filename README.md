@@ -124,5 +124,5 @@ The image already has a graph("agens_graph"), and you can see the list of graphs
 
 # Reference
 * AgensGraph Quick Guide : https://bitnine.net/documentations/manual/agens_graph_quick_guide.html
-* Dockerfile repository : https://github.com/bitnine-oss/agensgraph-docker.git
+* Dockerfile repository : https://github.com/skaiworldwide-oss/agensgraph-docker.git
 

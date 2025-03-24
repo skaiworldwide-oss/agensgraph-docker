@@ -22,7 +22,7 @@ ENV AG_SHA256 4eaa956e7f7a9b1eb4dc2ae4651b9b3578a13a3020b21e529f9908e3579e79ca
 
 RUN set -eux; \
 	\
-	wget -O postgresql.tar.gz "https://github.com/bitnine-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
+	wget -O postgresql.tar.gz "https://github.com/skaiworldwide-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
 	echo "$AG_SHA256 *postgresql.tar.gz" | sha256sum -c -; \
 	mkdir -p /usr/src/postgresql; \
 	tar \
