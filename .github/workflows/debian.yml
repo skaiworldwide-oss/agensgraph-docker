@@ -9,6 +9,10 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        debian_version: [bookworm, bullseye]  # Builds for Bookworm and Bullseye
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +33,12 @@ jobs:
         id: extract_branch
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
-      - name: Build and push
+      - name: Extract Parent Version
+        run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
+
+      - name: Build and push ${{ matrix.debian_version }}
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.BRANCH_NAME }}/debian/
+          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/${{ matrix.debian_version }}/
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-debian
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-${{ matrix.debian_version }}

@@ -9,6 +9,10 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        alpine_version: ['3.20', '3.21']  # Builds for Alpine 3.20 and 3.21
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +33,12 @@ jobs:
         id: extract_branch
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
-      - name: Build and push
+      - name: Extract Parent Version
+        run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
+
+      - name: Build and push for Alpine ${{ matrix.alpine_version }}
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.BRANCH_NAME }}/alpine/
+          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/alpine${{ matrix.alpine_version }}/
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-alpine
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-alpine${{ matrix.alpine_version }}

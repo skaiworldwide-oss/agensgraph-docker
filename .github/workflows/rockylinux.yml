@@ -29,9 +29,12 @@ jobs:
         id: extract_branch
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
+      - name: Extract Parent Version
+        run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.BRANCH_NAME }}/rockylinux/
+          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/rockylinux/
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-rocky
