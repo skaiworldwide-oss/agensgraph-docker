@@ -1,37 +1,28 @@
 ## Tag Info
-* **v2.13.1**
-  * v2.13.1 - alpine:3.17
-  * v2.13.1-debian - debian:bullseye-slim
-  * v2.13.1-rockylinux - rockylinux/rockylinux:8.7
-* **v2.13.0**
-  * v2.13.0 - alpine:3.16
-  * v2.13.0-debian - debian:bullseye-slim
-  * v2.13.0-rockylinux - rockylinux/rockylinux:8.4
-* **v2.12.0**
-  * v2.12.0 - alpine:3.14
-  * v2.12.0-debian - debian:bullseye-slim
-  * v2.12.0-rockylinux - rockylinux/rockylinux:8.4
-* **v2.5.0**
-  * v2.5.0 - alpine:3.14
-  * v2.5.0-debian - debian:bullseye-slim
-  * v2.5.0-centos - centos:8
-* **v2.1.3**
-  * v2.1.3 - alpine:3.13
-  * v2.1.3-debian - debian:stretch
-* older than **v2.1.1**
-  * Based on CentOS 7
+* **v2.14.1**
+  * v2.14.1-bookworm
+  * v2.14.1-alpine3.20
+  * v2.14.1-alpine3.19
+  * v2.14.1-bullseye
+  * v2.14.1-rockylinux8
+* **v2.13.2**
+  * v2.13.2-bookworm
+  * v2.13.2-alpine3.20
+  * v2.13.2-alpine3.19
+  * v2.13.2-bullseye
+  * v2.13.2-rockylinux8
+* older than **v2.13.2**
+  * Based on CentOS 7 and debian
 
 ## Getting started
 
 ### Quick start
 
 ```shell
-$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d bitnine/agensgraph:v2.1.3
+$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d bitnine/agensgraph:v2.14.1
 # Username: postgres
 # Password: agensgraph
 ```
-
-
 
 ### Advanced
 
@@ -44,14 +35,10 @@ $ docker run -d \
     -e POSTGRES_PASSWORD=agensgraph \
     -e PGDATA=/var/lib/postgresql/data/pgdata \
     -v /custom/mount:/var/lib/postgresql/data \
-    bitnine/agensgraph:v2.1.3
+    bitnine/agensgraph:v2.14.1
 ```
 
-
-
 ## Deep into AgensGraph
-
-The image already has a graph("agens_graph"), and you can see the list of graphs created with the `\dG` command.
 
 ```shell
 $ docker exec -it {NAME OR CONTAINER_ID} /bin/bash
@@ -81,48 +68,7 @@ postgres=# MATCH (n) RETURN n;
 (6 rows)
 ```
 
-# Older than v2.1.3
-### Usage (docker)    
-
-##### Image download
-
-```
-$ docker pull bitnine/agensgraph:v2.1.1
-```
-
-
-
-##### Create Volume
-
-```
-$ docker volume create --name myvolume
-```
-
-##### Container starting
-
-- agens
-  -  Temporary mode
-    ```$ docker run -it bitnine/agensgraph:v2.1.1 agens```
-  - Save mode
-    ```$ docker run -i -t -v myvolume:/home/agens/AgensGraph/data bitnine/agensgraph:v2.1.1 agens```
-- bash 
-  ```$ docker run -it bitnine/agensgraph:v2.1.1 /bin/bash```
-
-
-
-### Usage (AgensGraph)     
-
-The image already has a graph("agens_graph"), and you can see the list of graphs created with the `\dG` command.
-* list graph
-```agens=# \dG```
-* set graph
-```agens=#  set graph_path=graph_name;```
-* show graph
-```agens=#  show graph_path;```
-
-
-
 # Reference
-* AgensGraph Quick Guide : https://bitnine.net/documentations/manual/agens_graph_quick_guide.html
+* AgensGraph Quick Guide : https://www.skaiworldwide.com/en-US/resources?filterKey=manual
 * Dockerfile repository : https://github.com/skaiworldwide-oss/agensgraph-docker.git
 
