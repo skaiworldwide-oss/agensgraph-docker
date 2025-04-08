@@ -1,4 +1,10 @@
 ## Tag Info
+* **v2.15.0**
+  * v2.15.0-bookworm
+  * v2.15.0-rocky
+  * v2.15.0-alpine3.21
+  * v2.15.0-alpine3.20
+  * v2.15.0-bullseye
 * **v2.14.1**
   * v2.14.1-bookworm
   * v2.14.1-alpine3.20
@@ -19,7 +25,7 @@
 ### Quick start
 
 ```shell
-$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d bitnine/agensgraph:v2.14.1
+$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.15.0
 # Username: postgres
 # Password: agensgraph
 ```
@@ -35,7 +41,7 @@ $ docker run -d \
     -e POSTGRES_PASSWORD=agensgraph \
     -e PGDATA=/var/lib/postgresql/data/pgdata \
     -v /custom/mount:/var/lib/postgresql/data \
-    bitnine/agensgraph:v2.14.1
+    skaiworldwide/agensgraph:v2.15.0
 ```
 
 ## Deep into AgensGraph
@@ -43,7 +49,7 @@ $ docker run -d \
 ```shell
 $ docker exec -it {NAME OR CONTAINER_ID} /bin/bash
 bash-5.1# psql -U postgres
-psql (10.4)
+psql (15.12)
 Type "help" for help.
 
 postgres=# CREATE GRAPH AGENS;
@@ -71,4 +77,5 @@ postgres=# MATCH (n) RETURN n;
 # Reference
 * AgensGraph Quick Guide : https://www.skaiworldwide.com/en-US/resources?filterKey=manual
 * Dockerfile repository : https://github.com/skaiworldwide-oss/agensgraph-docker.git
+* Docker hub repository : https://hub.docker.com/r/skaiworldwide/agensgraph
 
