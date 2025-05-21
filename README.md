@@ -41,7 +41,7 @@ $ docker run -d \
     -e POSTGRES_PASSWORD=agensgraph \
     -e PGDATA=/var/lib/postgresql/data/pgdata \
     -v /custom/mount:/var/lib/postgresql/data \
-    skaiworldwide/agensgraph:v2.15.0
+    skaiworldwide/agensgraph
 ```
 
 ## Deep into AgensGraph
