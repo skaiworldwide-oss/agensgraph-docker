@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        debian_version: [bookworm, bullseye]  # Builds for Bookworm and Bullseye
+        debian_version: [bookworm, trixie]  # Builds for Bookworm and Trixie
 
     steps:
       - name: Checkout

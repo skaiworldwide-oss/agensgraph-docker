@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        alpine_version: ['3.20', '3.21']  # Builds for Alpine 3.20 and 3.21
+        alpine_version: ['3.21', '3.22']  # Builds for Alpine 3.21 and 3.22
 
     steps:
       - name: Checkout
