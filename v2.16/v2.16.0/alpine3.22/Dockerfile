@@ -48,7 +48,7 @@ RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 16
 ENV AG_VERSION v2.16.0
-ENV AG_SHA256 eba463d06ba49c83846557338901d7c9ee46dd9147a8197f3b2bde32d76fc7ed
+ENV AG_SHA256 68d0f0400fbd3bacd72eba0ae5ad91496a96a72cab6f09f3dda9b87d1e84ce42
 
 # ENV DOCKER_PG_LLVM_DEPS \
 # 		llvm19-dev \
