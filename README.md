@@ -1,4 +1,10 @@
 ## Tag Info
+* **v2.17.0**
+  * v2.17.0-trixie
+  * v2.17.0-bookworm
+  * v2.17.0-rocky
+  * v2.17.0-alpine3.24
+  * v2.17.0-alpine3.23
 * **v2.16.0**
   * v2.16.0-trixie
   * v2.16.0-bookworm
@@ -31,7 +37,7 @@
 ### Quick start
 
 ```shell
-$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.16.0
+$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.17.0
 # Username: postgres
 # Password: agensgraph
 ```
@@ -55,7 +61,7 @@ $ docker run -d \
 ```shell
 $ docker exec -it {NAME OR CONTAINER_ID} /bin/bash
 bash-5.1# psql -U postgres
-psql (16.9)
+psql (17.10)
 Type "help" for help.
 
 postgres=# CREATE GRAPH AGENS;
