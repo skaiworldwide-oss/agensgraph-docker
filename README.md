@@ -3,6 +3,8 @@
   * v2.16.0-trixie
   * v2.16.0-bookworm
   * v2.16.0-rocky
+  * v2.16.0-rocky9
+  * v2.16.0-rocky10
   * v2.16.0-alpine3.22
   * v2.16.0-alpine3.21
 * **v2.15.0**
