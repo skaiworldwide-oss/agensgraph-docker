@@ -9,6 +9,16 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - context_dir: rockylinux    # Rocky Linux 8
+            tag_suffix: rocky
+          - context_dir: rockylinux9   # Rocky Linux 9
+            tag_suffix: rocky9
+          - context_dir: rockylinux10  # Rocky Linux 10
+            tag_suffix: rocky10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,9 +42,21 @@ jobs:
       - name: Extract Parent Version
         run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
 
-      - name: Build and push
+      - name: Check variant directory exists
+        id: check_dir
+        run: |
+          if [ -d "${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/${{ matrix.context_dir }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Skip: ${{ matrix.context_dir }} not present in ${{ env.BRANCH_NAME }}"
+          fi
+
+      - name: Build and push ${{ matrix.tag_suffix }}
+        if: steps.check_dir.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/rockylinux/
+          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/${{ matrix.context_dir }}/
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-rocky
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-${{ matrix.tag_suffix }}
