@@ -40,5 +40,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/alpine${{ matrix.alpine_version }}/
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-alpine${{ matrix.alpine_version }}
