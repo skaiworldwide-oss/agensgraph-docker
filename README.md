@@ -1,4 +1,11 @@
 ## Tag Info
+* **v2.18.0**
+  * v2.18.0-trixie
+  * v2.18.0-bookworm
+  * v2.18.0-rocky10
+  * v2.18.0-rocky9
+  * v2.18.0-alpine3.24
+  * v2.18.0-alpine3.23
 * **v2.17.0**
   * v2.17.0-trixie
   * v2.17.0-bookworm
@@ -37,7 +44,7 @@
 ### Quick start
 
 ```shell
-$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.17.0
+$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.18.0
 # Username: postgres
 # Password: agensgraph
 ```
@@ -51,17 +58,25 @@ $ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/
 $ docker run -d \
     --name agensgraph \
     -e POSTGRES_PASSWORD=agensgraph \
-    -e PGDATA=/var/lib/postgresql/data/pgdata \
-    -v /custom/mount:/var/lib/postgresql/data \
+    -e PGDATA=/var/lib/postgresql/pgdata \
+    -v /custom/mount:/var/lib/postgresql \
     skaiworldwide/agensgraph
 ```
+
+> **Upgrading to v2.18.0 (PostgreSQL 18):** starting with v2.18.0 the default
+> `PGDATA` is `/var/lib/postgresql/18/docker` and the declared `VOLUME` moved from
+> `/var/lib/postgresql/data` to `/var/lib/postgresql`, matching the upstream
+> `postgres` image for 18+. If you mount a host volume that was initialised by an
+> earlier tag at `/var/lib/postgresql/data`, either keep pointing `PGDATA` at your
+> existing directory (`-e PGDATA=/var/lib/postgresql/data -v /custom/mount:/var/lib/postgresql/data`)
+> or migrate the data into the new layout before starting the container.
 
 ## Deep into AgensGraph
 
 ```shell
 $ docker exec -it {NAME OR CONTAINER_ID} /bin/bash
 bash-5.1# psql -U postgres
-psql (17.10)
+psql (18.4)
 Type "help" for help.
 
 postgres=# CREATE GRAPH AGENS;

@@ -9,6 +9,10 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rocky_version: ['9', '10']  # Builds for Rocky Linux 9 and 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,9 +36,9 @@ jobs:
       - name: Extract Parent Version
         run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
 
-      - name: Build and push
+      - name: Build and push for Rocky Linux ${{ matrix.rocky_version }}
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/rockylinux/
+          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/rockylinux${{ matrix.rocky_version }}/
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-rocky
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-rocky${{ matrix.rocky_version }}
