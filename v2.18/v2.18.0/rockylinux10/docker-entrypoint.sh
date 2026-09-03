@@ -48,15 +48,15 @@ docker_create_db_directories() {
 	if [ -n "${POSTGRES_INITDB_WALDIR:-}" ]; then
 		mkdir -p "$POSTGRES_INITDB_WALDIR"
 		if [ "$user" = '0' ]; then
-			find "$POSTGRES_INITDB_WALDIR" \! -user postgres -exec chown postgres '{}' +
+			find "$POSTGRES_INITDB_WALDIR" \! -user agens -exec chown agens '{}' +
 		fi
 		chmod 700 "$POSTGRES_INITDB_WALDIR"
 	fi
 
 	# allow the container to be started with `--user`
 	if [ "$user" = '0' ]; then
-		find "$PGDATA" \! -user postgres -exec chown postgres '{}' +
-		find /var/run/postgresql \! -user postgres -exec chown postgres '{}' +
+		find "$PGDATA" \! -user agens -exec chown agens '{}' +
+		find /var/run/postgresql \! -user agens -exec chown agens '{}' +
 	fi
 }
 
@@ -233,9 +233,16 @@ docker_setup_db() {
 # This should be called before any other functions
 docker_setup_env() {
 	file_env 'POSTGRES_PASSWORD'
+	local userWasGiven="${POSTGRES_USER:-}${POSTGRES_USER_FILE:-}"
 
-	file_env 'POSTGRES_USER' 'postgres'
-	file_env 'POSTGRES_DB' "$POSTGRES_USER"
+	file_env 'POSTGRES_USER' 'agens'
+	# the default database stays 'postgres' (renaming it is out of scope), but an
+	# explicitly provided POSTGRES_USER still derives POSTGRES_DB, as upstream does
+	if [ -n "$userWasGiven" ]; then
+		file_env 'POSTGRES_DB' "$POSTGRES_USER"
+	else
+		file_env 'POSTGRES_DB' 'postgres'
+	fi
 	file_env 'POSTGRES_INITDB_ARGS'
 	: "${POSTGRES_HOST_AUTH_METHOD:=}"
 
@@ -340,7 +347,7 @@ _main() {
 		docker_create_db_directories
 		if [ "$(id -u)" = '0' ]; then
 			# then restart script as postgres user
-			exec gosu postgres "$BASH_SOURCE" "$@"
+			exec gosu agens "$BASH_SOURCE" "$@"
 		fi
 
 		# only run initialization on an empty data directory

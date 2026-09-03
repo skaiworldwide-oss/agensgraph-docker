@@ -2,12 +2,12 @@ FROM debian:bookworm-slim
 
 # explicitly set user/group IDs
 RUN set -eux; \
-	groupadd -r postgres --gid=999; \
+	groupadd -r agens --gid=999; \
 # https://salsa.debian.org/postgresql/postgresql-common/blob/997d842ee744687d99a2b2d95c1083a2615c79e8/debian/postgresql-common.postinst#L32-35
-	useradd -r -g postgres --uid=999 --home-dir=/var/lib/postgresql --shell=/bin/bash postgres; \
+	useradd -r -g agens --uid=999 --home-dir=/var/lib/postgresql --shell=/bin/bash agens; \
 # also create the postgres user's home directory with appropriate permissions
 # see https://github.com/docker-library/postgres/issues/274
-	install --verbose --directory --owner postgres --group postgres --mode 1777 /var/lib/postgresql
+	install --verbose --directory --owner agens --group agens --mode 1777 /var/lib/postgresql
 
 RUN set -ex; \
 	apt-get update; \
@@ -165,7 +165,7 @@ RUN set -eux; \
 	sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /usr/local/share/postgresql/postgresql.conf.sample; \
 	grep -F "listen_addresses = '*'" /usr/local/share/postgresql/postgresql.conf.sample
 
-RUN install --verbose --directory --owner postgres --group postgres --mode 3777 /var/run/postgresql
+RUN install --verbose --directory --owner agens --group agens --mode 3777 /var/run/postgresql
 
 #
 # NOTE: in 18+, PGDATA has changed to match the pg_ctlcluster standard directory structure, and the VOLUME has moved from /var/lib/postgresql/data to /var/lib/postgresql
