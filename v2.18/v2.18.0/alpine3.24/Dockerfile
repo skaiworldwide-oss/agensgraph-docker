@@ -3,11 +3,11 @@ FROM alpine:3.24
 # 70 is the standard uid/gid for "postgres" in Alpine
 # https://git.alpinelinux.org/aports/tree/main/postgresql-common/postgresql-common.pre-install?h=3.22-stable
 RUN set -eux; \
-	addgroup -g 70 -S postgres; \
-	adduser -u 70 -S -D -G postgres -H -h /var/lib/postgresql -s /bin/sh postgres; \
+	addgroup -g 70 -S agens; \
+	adduser -u 70 -S -D -G agens -H -h /var/lib/postgresql -s /bin/sh agens; \
 # also create the postgres user's home directory with appropriate permissions
 # see https://github.com/docker-library/postgres/issues/274
-	install --verbose --directory --owner postgres --group postgres --mode 1777 /var/lib/postgresql
+	install --verbose --directory --owner agens --group agens --mode 1777 /var/lib/postgresql
 
 # grab gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
@@ -194,7 +194,7 @@ RUN set -eux; \
 	sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /usr/local/share/postgresql/postgresql.conf.sample; \
 	grep -F "listen_addresses = '*'" /usr/local/share/postgresql/postgresql.conf.sample
 
-RUN install --verbose --directory --owner postgres --group postgres --mode 3777 /var/run/postgresql
+RUN install --verbose --directory --owner agens --group agens --mode 3777 /var/run/postgresql
 
 #
 # NOTE: in 18+, PGDATA has changed to match the pg_ctlcluster standard directory structure, and the VOLUME has moved from /var/lib/postgresql/data to /var/lib/postgresql
