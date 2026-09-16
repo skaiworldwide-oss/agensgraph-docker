@@ -69,9 +69,8 @@ RUN set -eux; \
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 18
-ENV AG_VERSION v2.18.0
-# TODO: update AG_SHA256 after the v2.18.0 release tarball is published
-ENV AG_SHA256 0000000000000000000000000000000000000000000000000000000000000000
+ENV AG_VERSION v2.18.6.0-rc1
+ENV AG_SHA256 6da6a3fb46ab663158d0b5f711b20421215625dd756d261f688806d5443d6430
 
 ENV PATH $PATH:/usr/lib/postgresql/$PG_MAJOR/bin
 
@@ -79,7 +78,6 @@ RUN set -eux; \
 	apt-get update; \
 	apt-get upgrade -y; \
 	apt-get install -y --no-install-recommends ca-certificates wget; \
-	# Update this after release
 	wget -O postgresql.tar.gz "https://github.com/skaiworldwide-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
 	echo "$AG_SHA256 *postgresql.tar.gz" | sha256sum -c -; \
 	mkdir -p /usr/src/postgresql; \

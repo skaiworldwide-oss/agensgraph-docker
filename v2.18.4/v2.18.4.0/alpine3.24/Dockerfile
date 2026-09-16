@@ -1,9 +1,12 @@
-FROM rockylinux/rockylinux:9
+FROM alpine:3.24
 
-# explicitly set user/group IDs
+# 70 is the standard uid/gid for "postgres" in Alpine
+# https://git.alpinelinux.org/aports/tree/main/postgresql-common/postgresql-common.pre-install?h=3.22-stable
 RUN set -eux; \
-	groupadd -r agens; \
-	useradd -r -g agens --home-dir=/var/lib/postgresql --shell=/bin/bash agens; \
+	addgroup -g 70 -S agens; \
+	adduser -u 70 -S -D -G agens -H -h /var/lib/postgresql -s /bin/sh agens; \
+# also create the postgres user's home directory with appropriate permissions
+# see https://github.com/docker-library/postgres/issues/274
 	install --verbose --directory --owner agens --group agens --mode 1777 /var/lib/postgresql
 
 # grab gosu for easy step-down from root
@@ -11,17 +14,13 @@ RUN set -eux; \
 ENV GOSU_VERSION 1.19
 RUN set -eux; \
 	\
-	rpmArch="$(rpm --query --queryformat='%{ARCH}' rpm)"; \
-	case "$rpmArch" in \
-		aarch64) dpkgArch='arm64' ;; \
-		armv[67]*) dpkgArch='armhf' ;; \
-		i[3456]86) dpkgArch='i386' ;; \
-		ppc64le) dpkgArch='ppc64el' ;; \
-		riscv64 | s390x) dpkgArch="$rpmArch" ;; \
-		x86_64) dpkgArch='amd64' ;; \
-		*) echo >&2 "error: unknown/unsupported architecture '$rpmArch'"; exit 1 ;; \
-	esac; \
-	dnf install --assumeyes wget gnupg2; \
+	apk add --no-cache --virtual .gosu-deps \
+		ca-certificates \
+		dpkg \
+		gnupg \
+	; \
+	\
+	dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
 	wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
 	wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc"; \
 	\
@@ -32,76 +31,33 @@ RUN set -eux; \
 	gpgconf --kill all; \
 	rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc; \
 	\
+# clean up fetch dependencies
+	apk del --no-network .gosu-deps; \
+	\
 	chmod +x /usr/local/bin/gosu; \
 # verify that the binary works
 	gosu --version; \
-	gosu nobody true; \
-# drop the dnf metadata cache that "dnf install wget" pulled in (~150MB) so it
-# isn't frozen into this layer (the build layer cleans its own cache separately)
-	dnf clean all; \
-	rm -rf /var/cache/dnf
+	gosu nobody true
 
+# make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
+# alpine doesn't require explicit locale-file generation
 ENV LANG en_US.utf8
 
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 18
-ENV AG_VERSION v2.18.0
-# TODO: update AG_SHA256 after the v2.18.0 release tarball is published
-ENV AG_SHA256 0000000000000000000000000000000000000000000000000000000000000000
+ENV AG_VERSION v2.18.4.0
+ENV AG_SHA256 f56206ba4bfddbe08264c8285bc44e967f56f77465d07dd4f0acbc7f8b9b9bdb
+
+# JIT (LLVM) is left disabled to keep the image small. To enable it, uncomment
+# the deps below, add $DOCKER_PG_LLVM_DEPS back to .build-deps, export
+# LLVM_CONFIG/CLANG before ./configure, and re-enable --with-llvm.
+# ENV DOCKER_PG_LLVM_DEPS \
+# 		llvm21-dev \
+# 		clang21
 
 RUN set -eux; \
 	\
-	dnf -y install glibc-langpack-en dnf-plugins-core epel-release; \
-    dnf config-manager --set-enabled crb; \
-	\
-	dnf update --assumeyes --skip-broken; \
-    dnf install --assumeyes \
-        bison \
-#        coreutils \
-        dpkg-dev dpkg \
-        flex \
-        gcc \
-   		krb5-devel \
-        glibc-devel \
-        libedit-devel \
-    	libxml2-devel \
-        libxslt-devel \
-    	kernel-headers \
-# llvm-devel clang gcc-c++ \
-        make \
-    	openldap-devel \
-        openssl-devel \
-# configure: error: prove not found
-        perl-utils \
-# configure: error: Perl module IPC::Run is required to run TAP tests
-        perl-IPC-Run \
-        perl-Test-Simple \
-        perl-Test-Harness \
-    	perl-devel \
-		perl-ExtUtils-Embed \
-# gen_node_support.pl/genbki.pl need FindBin and plperl needs Opcode; both are
-# split into their own packages on EL9+
-		perl-FindBin \
-		perl-Opcode \
-    	python3-devel \
-    	tcl-devel \
-        util-linux \
-        zlib-devel \
-# https://www.postgresql.org/docs/10/static/release-10.html#id-1.11.6.9.5.13
-        libicu-devel \
-        readline readline-devel \
-        libuuid-devel \
-        docbook-style-xsl \
-    	lz4-devel \
-    	libzstd-devel \
-# https://www.postgresql.org/docs/18/install-make.html#CONFIGURE-OPTION-WITH-LIBCURL
-    	libcurl-devel \
-# https://www.postgresql.org/docs/18/install-make.html#CONFIGURE-OPTION-WITH-LIBURING
-    	liburing-devel \
-        ; \
-	\
-	# Update this after release
 	wget -O postgresql.tar.gz "https://github.com/skaiworldwide-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
 	echo "$AG_SHA256 *postgresql.tar.gz" | sha256sum -c -; \
 	mkdir -p /usr/src/postgresql; \
@@ -113,6 +69,43 @@ RUN set -eux; \
 	; \
 	rm postgresql.tar.gz; \
 	\
+	apk add --no-cache --virtual .build-deps \
+		bison \
+		coreutils \
+		dpkg-dev dpkg \
+		flex \
+		g++ \
+		gcc \
+		krb5-dev \
+		libc-dev \
+		libedit-dev \
+		libxml2-dev \
+		libxslt-dev \
+		linux-headers \
+		make \
+		openldap-dev \
+		openssl-dev \
+		perl-dev \
+		perl-ipc-run \
+		perl-utils \
+		python3-dev \
+		tcl-dev \
+		util-linux-dev \
+		zlib-dev \
+# https://www.postgresql.org/docs/10/static/release-10.html#id-1.11.6.9.5.13
+		icu-dev \
+# https://www.postgresql.org/docs/14/release-14.html#id-1.11.6.5.5.3.7
+		lz4-dev \
+# https://www.postgresql.org/docs/15/release-15.html "--with-zstd to enable Zstandard builds"
+		zstd-dev \
+# https://salsa.debian.org/postgresql/postgresql-common/-/commit/a31ce5b893c11e0f17a016e38c1882fbe1820081
+# https://www.postgresql.org/docs/18/install-make.html#CONFIGURE-OPTION-WITH-LIBCURL
+		curl-dev \
+# https://salsa.debian.org/postgresql/postgresql-common/-/commit/89c384273f4c4092483598c292b1b1b188816cce
+# https://www.postgresql.org/docs/18/install-make.html#CONFIGURE-OPTION-WITH-LIBURING
+		liburing-dev \
+	; \
+	\
 	cd /usr/src/postgresql; \
 # update "DEFAULT_PGSOCKET_DIR" to "/var/run/postgresql" (matching Debian)
 # see https://anonscm.debian.org/git/pkg-postgresql/postgresql.git/tree/debian/patches/51-default-sockets-in-var.patch?id=8b539fcb3e093a521c095e70bdfa76887217b89f
@@ -120,8 +113,14 @@ RUN set -eux; \
 	grep '/var/run/postgresql' src/include/pg_config_manual.h.new; \
 	mv src/include/pg_config_manual.h.new src/include/pg_config_manual.h; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
-# configure options taken from:
-# https://anonscm.debian.org/cgit/pkg-postgresql/postgresql.git/tree/debian/rules?h=9.5
+	\
+# # https://git.alpinelinux.org/aports/tree/community/postgresql15/APKBUILD?h=3.22-stable#n176 ("export LLVM_CONFIG")
+# 	export LLVM_CONFIG="/usr/lib/llvm21/bin/llvm-config"; \
+# # https://git.alpinelinux.org/aports/tree/community/postgresql15/APKBUILD?h=3.22-stable#n180 ("older clang versions don't have a 'clang' exe anymore.")
+# 	export CLANG=clang-21; \
+# 	\
+# configure options mostly copying Debian:
+# https://salsa.debian.org/postgresql/postgresql-common/-/blob/6e26b5107295170cc8731a3acbf13228ea15941e/server/postgresql.mk#L32
 	./configure \
 		--enable-option-checking=fatal \
 		--build="$gnuArch" \
@@ -139,61 +138,61 @@ RUN set -eux; \
 		--with-includes=/usr/local/include \
 		--with-libraries=/usr/local/lib \
 		--with-gssapi \
+		--with-icu \
 		--with-ldap \
 		--with-libcurl \
 		--with-liburing \
-		--with-tcl \
-		--with-perl \
-		--with-python \
-#		--with-pam \
-		--with-openssl \
 		--with-libxml \
 		--with-libxslt \
-		--with-icu \
 #		--with-llvm \
 		--with-lz4 \
+		--with-openssl \
+#		--with-pam \
+		--with-perl \
+		--with-python \
+		--with-tcl \
 		--with-zstd \
 	; \
-	make -j "$(nproc)" world; \
-	make install-world; \
+	make -j "$(nproc)" world-bin; \
+	make install-world-bin; \
 	make -C contrib install; \
 	\
-# strip build-only packages to shrink the image; clean_requirements_on_remove=false
-# keeps their runtime shared libs (libicu, openssl-libs, libxml2, ...) in place
-	dnf remove -y --setopt=clean_requirements_on_remove=false \
-		bison flex gcc make dpkg-dev dpkg kernel-headers \
-# cpp/binutils are pulled in as gcc dependencies; with clean_requirements_on_remove=false
-# they survive the gcc removal, so list them explicitly (build-only, ~50MB combined)
-		cpp binutils \
-		perl-utils perl-IPC-Run perl-Test-Simple perl-Test-Harness \
-		perl-ExtUtils-Embed perl-devel perl-FindBin perl-Opcode docbook-style-xsl docbook-dtds \
-		krb5-devel glibc-devel libedit-devel libxml2-devel libxslt-devel \
-		openldap-devel openssl-devel python3-devel tcl-devel zlib-devel \
-		libicu-devel readline-devel libuuid-devel lz4-devel libzstd-devel \
-		libcurl-devel liburing-devel \
+	runDeps="$( \
+		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
+			| tr ',' '\n' \
+			| sort -u \
+			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+# Remove plperl, plpython and pltcl dependencies by default to save image size
+# To use the pl extensions, those have to be installed in a derived image
+			| grep -v -e perl -e python -e tcl \
+	)"; \
+	apk add --no-cache --virtual .postgresql-rundeps \
+		$runDeps \
+		bash \
+		tzdata \
+		zstd \
+# https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.16.0#ICU_data_split
+		icu-data-full \
+# https://git.alpinelinux.org/aports/tree/community/nss_wrapper/APKBUILD?h=3.22-stable#n7 ("ppc64le: test case segfaults")
+		$([ "$(apk --print-arch)" != 'ppc64le' ] && echo 'nss_wrapper') \
 	; \
-	dnf clean all; \
+	apk del --no-network .build-deps; \
 	cd /; \
 	rm -rf \
 		/usr/src/postgresql \
 		/usr/local/share/doc \
 		/usr/local/share/man \
-# system docs/man from the (now partly removed) build packages — not needed at runtime
-		/usr/share/doc \
-		/usr/share/man \
 	; \
 	\
-	/bin/bash -c 'echo "/usr/local/lib" > /etc/ld.so.conf.d/agensgraph.conf'; \
-    ldconfig; \
-    \
 	postgres --version
 
 # make the sample config easier to munge (and "correct by default")
 RUN set -eux; \
+	cp -v /usr/local/share/postgresql/postgresql.conf.sample /usr/local/share/postgresql/postgresql.conf.sample.orig; \
 	sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /usr/local/share/postgresql/postgresql.conf.sample; \
 	grep -F "listen_addresses = '*'" /usr/local/share/postgresql/postgresql.conf.sample
 
-RUN mkdir -p /var/run/postgresql && chown -R agens:agens /var/run/postgresql && chmod 2777 /var/run/postgresql
+RUN install --verbose --directory --owner agens --group agens --mode 3777 /var/run/postgresql
 
 #
 # NOTE: in 18+, PGDATA has changed to match the pg_ctlcluster standard directory structure, and the VOLUME has moved from /var/lib/postgresql/data to /var/lib/postgresql

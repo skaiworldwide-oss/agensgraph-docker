@@ -3,8 +3,7 @@ name: rockylinux build
 on:
   push:
     branches:
-      - '*'
-      - '!master'   # excludes master
+      - 'v*'   # a branch per version, named after its upstream tag
 
 jobs:
   docker:
@@ -34,7 +33,17 @@ jobs:
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
       - name: Extract Parent Version
-        run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
+        run: |
+          # The line folder is the version without its last component: v2.18.4.0
+          # sits under v2.18.4, the release candidate v2.18.6.0-rc1 under
+          # v2.18.6, and the older v2.17.0 under v2.17.
+          version="${BRANCH_NAME#v}"
+          IFS='.' read -r major minor patch build <<< "$version"
+          if [ -n "$build" ]; then
+            echo "PARENT_VERSION=v$major.$minor.$patch" >> $GITHUB_ENV
+          else
+            echo "PARENT_VERSION=v$major.$minor" >> $GITHUB_ENV
+          fi
 
       - name: Build and push for Rocky Linux ${{ matrix.rocky_version }}
         uses: docker/build-push-action@v6
