@@ -46,9 +46,8 @@ ENV LANG en_US.utf8
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 18
-ENV AG_VERSION v2.18.0
-# TODO: update AG_SHA256 after the v2.18.0 release tarball is published
-ENV AG_SHA256 0000000000000000000000000000000000000000000000000000000000000000
+ENV AG_VERSION v2.18.4.0
+ENV AG_SHA256 f56206ba4bfddbe08264c8285bc44e967f56f77465d07dd4f0acbc7f8b9b9bdb
 
 # JIT (LLVM) is left disabled to keep the image small. To enable it, uncomment
 # the deps below, add $DOCKER_PG_LLVM_DEPS back to .build-deps, export
@@ -59,7 +58,6 @@ ENV AG_SHA256 0000000000000000000000000000000000000000000000000000000000000000
 
 RUN set -eux; \
 	\
-    # Update this after release
 	wget -O postgresql.tar.gz "https://github.com/skaiworldwide-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
 	echo "$AG_SHA256 *postgresql.tar.gz" | sha256sum -c -; \
 	mkdir -p /usr/src/postgresql; \

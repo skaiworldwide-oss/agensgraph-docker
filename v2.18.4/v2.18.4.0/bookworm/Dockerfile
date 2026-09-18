@@ -1,4 +1,4 @@
-FROM debian:trixie-slim
+FROM debian:bookworm-slim
 
 # explicitly set user/group IDs
 RUN set -eux; \
@@ -69,9 +69,8 @@ RUN set -eux; \
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 18
-ENV AG_VERSION v2.18.0
-# TODO: update AG_SHA256 after the v2.18.0 release tarball is published
-ENV AG_SHA256 0000000000000000000000000000000000000000000000000000000000000000
+ENV AG_VERSION v2.18.4.0
+ENV AG_SHA256 f56206ba4bfddbe08264c8285bc44e967f56f77465d07dd4f0acbc7f8b9b9bdb
 
 ENV PATH $PATH:/usr/lib/postgresql/$PG_MAJOR/bin
 
@@ -79,7 +78,6 @@ RUN set -eux; \
 	apt-get update; \
 	apt-get upgrade -y; \
 	apt-get install -y --no-install-recommends ca-certificates wget; \
-	# Update this after release
 	wget -O postgresql.tar.gz "https://github.com/skaiworldwide-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
 	echo "$AG_SHA256 *postgresql.tar.gz" | sha256sum -c -; \
 	mkdir -p /usr/src/postgresql; \
@@ -138,9 +136,8 @@ RUN set -eux; \
 # we purge pax-utils, so the matching runtime packages can be reinstalled after the
 # -dev build deps are removed. Without this the PL/contrib .so files ship with
 # dangling library deps and fail to load. Version-agnostic, so it tracks debian's
-# soname bumps (trixie's libperl.so.5.40 / libpython3.13 vs bookworm's 5.36 / 3.11).
-# We map each needed SONAME to its owning package with `dpkg -S` (the official
-# image's "so:" apt syntax does not resolve on debian here).
+# soname bumps. We map each needed SONAME to its owning package with `dpkg -S`
+# (the official image's "so:" apt syntax does not resolve on debian here).
 	runDeps="$( \
 		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
 			| tr ',' '\n' \
@@ -152,7 +149,7 @@ RUN set -eux; \
     apt purge -y $build_deps pax-utils; \
     apt-get autoremove --purge -y; \
     apt-get update; \
-	apt-get install -y --no-install-recommends $runDeps; \
+    apt-get install -y --no-install-recommends $runDeps; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
 	rm -rf \

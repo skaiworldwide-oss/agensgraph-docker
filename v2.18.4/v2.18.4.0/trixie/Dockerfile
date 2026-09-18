@@ -1,107 +1,83 @@
-FROM rockylinux/rockylinux:10
+FROM debian:trixie-slim
 
 # explicitly set user/group IDs
 RUN set -eux; \
-	groupadd -r agens; \
-	useradd -r -g agens --home-dir=/var/lib/postgresql --shell=/bin/bash agens; \
+	groupadd -r agens --gid=999; \
+# https://salsa.debian.org/postgresql/postgresql-common/blob/997d842ee744687d99a2b2d95c1083a2615c79e8/debian/postgresql-common.postinst#L32-35
+	useradd -r -g agens --uid=999 --home-dir=/var/lib/postgresql --shell=/bin/bash agens; \
+# also create the postgres user's home directory with appropriate permissions
+# see https://github.com/docker-library/postgres/issues/274
 	install --verbose --directory --owner agens --group agens --mode 1777 /var/lib/postgresql
+
+RUN set -ex; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		gnupg \
+# https://www.postgresql.org/docs/16/app-psql.html#APP-PSQL-META-COMMAND-PSET-PAGER
+# https://github.com/postgres/postgres/blob/REL_16_1/src/include/fe_utils/print.h#L25
+# (if "less" is available, it gets used as the default pager for psql, and it only adds ~1.5MiB to our image size)
+		less \
+	; \
+	rm -rf /var/lib/apt/lists/*
 
 # grab gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
 ENV GOSU_VERSION 1.19
 RUN set -eux; \
-	\
-	rpmArch="$(rpm --query --queryformat='%{ARCH}' rpm)"; \
-	case "$rpmArch" in \
-		aarch64) dpkgArch='arm64' ;; \
-		armv[67]*) dpkgArch='armhf' ;; \
-		i[3456]86) dpkgArch='i386' ;; \
-		ppc64le) dpkgArch='ppc64el' ;; \
-		riscv64 | s390x) dpkgArch="$rpmArch" ;; \
-		x86_64) dpkgArch='amd64' ;; \
-		*) echo >&2 "error: unknown/unsupported architecture '$rpmArch'"; exit 1 ;; \
-	esac; \
-	dnf install --assumeyes wget gnupg2; \
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends ca-certificates wget; \
+	rm -rf /var/lib/apt/lists/*; \
+	dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
 	wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
 	wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc"; \
-	\
-# verify the signature
 	export GNUPGHOME="$(mktemp -d)"; \
 	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
 	gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
 	gpgconf --kill all; \
 	rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc; \
-	\
+	apt-mark auto '.*' > /dev/null; \
+	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
 	chmod +x /usr/local/bin/gosu; \
-# verify that the binary works
 	gosu --version; \
-	gosu nobody true; \
-# drop the dnf metadata cache that "dnf install wget" pulled in (~150MB) so it
-# isn't frozen into this layer (the build layer cleans its own cache separately)
-	dnf clean all; \
-	rm -rf /var/cache/dnf
+	gosu nobody true
 
+# make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
+RUN set -eux; \
+	if [ -f /etc/dpkg/dpkg.cfg.d/docker ]; then \
+# if this file exists, we're likely in "debian:xxx-slim", and locales are thus being excluded so we need to remove that exclusion (since we need locales)
+		grep -q '/usr/share/locale' /etc/dpkg/dpkg.cfg.d/docker; \
+		sed -ri '/\/usr\/share\/locale/d' /etc/dpkg/dpkg.cfg.d/docker; \
+		! grep -q '/usr/share/locale' /etc/dpkg/dpkg.cfg.d/docker; \
+	fi; \
+	apt-get update; apt-get install -y --no-install-recommends locales; rm -rf /var/lib/apt/lists/*; \
+	echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen; \
+	locale-gen; \
+	locale -a | grep 'en_US.utf8'
 ENV LANG en_US.utf8
+
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		libnss-wrapper \
+		xz-utils \
+		zstd \
+	; \
+	rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 18
-ENV AG_VERSION v2.18.0
-# TODO: update AG_SHA256 after the v2.18.0 release tarball is published
-ENV AG_SHA256 0000000000000000000000000000000000000000000000000000000000000000
+ENV AG_VERSION v2.18.4.0
+ENV AG_SHA256 f56206ba4bfddbe08264c8285bc44e967f56f77465d07dd4f0acbc7f8b9b9bdb
+
+ENV PATH $PATH:/usr/lib/postgresql/$PG_MAJOR/bin
 
 RUN set -eux; \
-	\
-	dnf -y install glibc-langpack-en dnf-plugins-core epel-release; \
-    dnf config-manager --set-enabled crb; \
-	\
-	dnf update --assumeyes --skip-broken; \
-    dnf install --assumeyes \
-        bison \
-#        coreutils \
-        dpkg-dev dpkg \
-        flex \
-        gcc \
-   		krb5-devel \
-        glibc-devel \
-        libedit-devel \
-    	libxml2-devel \
-        libxslt-devel \
-    	kernel-headers \
-# llvm-devel clang gcc-c++ \
-        make \
-    	openldap-devel \
-        openssl-devel \
-# configure: error: prove not found
-        perl-utils \
-# configure: error: Perl module IPC::Run is required to run TAP tests
-        perl-IPC-Run \
-        perl-Test-Simple \
-        perl-Test-Harness \
-    	perl-devel \
-		perl-ExtUtils-Embed \
-# gen_node_support.pl/genbki.pl need FindBin and plperl needs Opcode; both are
-# split into their own packages on EL9+
-		perl-FindBin \
-		perl-Opcode \
-    	python3-devel \
-    	tcl-devel \
-        util-linux \
-        zlib-devel \
-# https://www.postgresql.org/docs/10/static/release-10.html#id-1.11.6.9.5.13
-        libicu-devel \
-        readline readline-devel \
-        libuuid-devel \
-        docbook-style-xsl \
-    	lz4-devel \
-    	libzstd-devel \
-# https://www.postgresql.org/docs/18/install-make.html#CONFIGURE-OPTION-WITH-LIBCURL
-    	libcurl-devel \
-# https://www.postgresql.org/docs/18/install-make.html#CONFIGURE-OPTION-WITH-LIBURING
-    	liburing-devel \
-        ; \
-	\
-	# Update this after release
+	apt-get update; \
+	apt-get upgrade -y; \
+	apt-get install -y --no-install-recommends ca-certificates wget; \
 	wget -O postgresql.tar.gz "https://github.com/skaiworldwide-oss/agensgraph/archive/$AG_VERSION.tar.gz"; \
 	echo "$AG_SHA256 *postgresql.tar.gz" | sha256sum -c -; \
 	mkdir -p /usr/src/postgresql; \
@@ -113,12 +89,9 @@ RUN set -eux; \
 	; \
 	rm postgresql.tar.gz; \
 	\
-	cd /usr/src/postgresql; \
-# update "DEFAULT_PGSOCKET_DIR" to "/var/run/postgresql" (matching Debian)
-# see https://anonscm.debian.org/git/pkg-postgresql/postgresql.git/tree/debian/patches/51-default-sockets-in-var.patch?id=8b539fcb3e093a521c095e70bdfa76887217b89f
-	awk '$1 == "#define" && $2 == "DEFAULT_PGSOCKET_DIR" && $3 == "\"/tmp\"" { $3 = "\"/var/run/postgresql\""; print; next } { print }' src/include/pg_config_manual.h > src/include/pg_config_manual.h.new; \
-	grep '/var/run/postgresql' src/include/pg_config_manual.h.new; \
-	mv src/include/pg_config_manual.h.new src/include/pg_config_manual.h; \
+    build_deps='build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt1-dev libssl-dev libxml2-utils xsltproc pkg-config uuid-dev docbook-xsl libkrb5-dev libc-dev libedit-dev libldap2-dev libperl-dev perl libipc-run-perl perl-modules python3-dev tcl-dev libicu-dev liblz4-dev libzstd-dev libcurl4-openssl-dev liburing-dev';\
+    apt-get install -y $build_deps pax-utils; \
+    cd /usr/src/postgresql; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
 # configure options taken from:
 # https://anonscm.debian.org/cgit/pkg-postgresql/postgresql.git/tree/debian/rules?h=9.5
@@ -158,42 +131,40 @@ RUN set -eux; \
 	make install-world; \
 	make -C contrib install; \
 	\
-# strip build-only packages to shrink the image; clean_requirements_on_remove=false
-# keeps their runtime shared libs (libicu, openssl-libs, libxml2, ...) in place
-	dnf remove -y --setopt=clean_requirements_on_remove=false \
-		bison flex gcc make dpkg-dev dpkg kernel-headers \
-# cpp/binutils are pulled in as gcc dependencies; with clean_requirements_on_remove=false
-# they survive the gcc removal, so list them explicitly (build-only, ~50MB combined)
-		cpp binutils \
-		perl-utils perl-IPC-Run perl-Test-Simple perl-Test-Harness \
-		perl-ExtUtils-Embed perl-devel perl-FindBin perl-Opcode docbook-style-xsl docbook-dtds \
-		krb5-devel glibc-devel libedit-devel libxml2-devel libxslt-devel \
-		openldap-devel openssl-devel python3-devel tcl-devel zlib-devel \
-		libicu-devel readline-devel libuuid-devel lz4-devel libzstd-devel \
-		libcurl-devel liburing-devel \
-	; \
-	dnf clean all; \
-	cd /; \
+# determine the runtime shared-library deps of everything we built into /usr/local
+# (libperl/libpython/libtcl/libxslt for plperl/plpython3/pltcl/xml2, etc.) BEFORE
+# we purge pax-utils, so the matching runtime packages can be reinstalled after the
+# -dev build deps are removed. Without this the PL/contrib .so files ship with
+# dangling library deps and fail to load. Version-agnostic, so it tracks debian's
+# soname bumps (trixie's libperl.so.5.40 / libpython3.13 vs bookworm's 5.36 / 3.11).
+# We map each needed SONAME to its owning package with `dpkg -S` (the official
+# image's "so:" apt syntax does not resolve on debian here).
+	runDeps="$( \
+		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
+			| tr ',' '\n' \
+			| sort -u \
+			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print $1 }' \
+			| while read -r soname; do dpkg-query -S "*/$soname" 2>/dev/null | grep -v '^diversion by\|^local diversion' | cut -d: -f1; done \
+			| sort -u \
+	)"; \
+    apt purge -y $build_deps pax-utils; \
+    apt-get autoremove --purge -y; \
+    apt-get update; \
+	apt-get install -y --no-install-recommends $runDeps; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
 	rm -rf \
 		/usr/src/postgresql \
 		/usr/local/share/doc \
-		/usr/local/share/man \
-# system docs/man from the (now partly removed) build packages — not needed at runtime
-		/usr/share/doc \
-		/usr/share/man \
-	; \
-	\
-	/bin/bash -c 'echo "/usr/local/lib" > /etc/ld.so.conf.d/agensgraph.conf'; \
-    ldconfig; \
-    \
-	postgres --version
+		/usr/local/share/man; \
+    postgres --version
 
 # make the sample config easier to munge (and "correct by default")
 RUN set -eux; \
 	sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /usr/local/share/postgresql/postgresql.conf.sample; \
 	grep -F "listen_addresses = '*'" /usr/local/share/postgresql/postgresql.conf.sample
 
-RUN mkdir -p /var/run/postgresql && chown -R agens:agens /var/run/postgresql && chmod 2777 /var/run/postgresql
+RUN install --verbose --directory --owner agens --group agens --mode 3777 /var/run/postgresql
 
 #
 # NOTE: in 18+, PGDATA has changed to match the pg_ctlcluster standard directory structure, and the VOLUME has moved from /var/lib/postgresql/data to /var/lib/postgresql

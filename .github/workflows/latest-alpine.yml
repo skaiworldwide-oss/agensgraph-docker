@@ -26,7 +26,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
   
       - name: Find highest versioned subfolder
-        run: echo "SUB_DIR=$(python3 ./.github/workflows/FindVer.py)" >> $GITHUB_ENV
+        run: |
+          # Assigning first propagates FindVer's exit status; inside echo's
+          # argument a failure would be swallowed and leave SUB_DIR empty.
+          SUB_DIR="$(python3 ./.github/workflows/FindVer.py)"
+          echo "SUB_DIR=$SUB_DIR" >> $GITHUB_ENV
 
       - name: Build and push
         uses: docker/build-push-action@v6
