@@ -35,8 +35,7 @@ jobs:
       - name: Extract Parent Version
         run: |
           # The line folder is the version without its last component: v2.18.4.0
-          # sits under v2.18.4, the release candidate v2.18.6.0-rc1 under
-          # v2.18.6, and the older v2.17.0 under v2.17.
+          # sits under v2.18.4, and the older v2.17.0 under v2.17.
           version="${BRANCH_NAME#v}"
           IFS='.' read -r major minor patch build <<< "$version"
           if [ -n "$build" ]; then
