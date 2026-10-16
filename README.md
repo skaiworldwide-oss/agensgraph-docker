@@ -8,13 +8,12 @@ not; here each one gets a branch of the same name, and its Dockerfiles live in
 component:
 
 ```
-v2.18.6/v2.18.6.0-rc1/bookworm/Dockerfile   <- branch v2.18.6.0-rc1, a candidate
-v2.18.4/v2.18.4.0/bookworm/Dockerfile       <- branch v2.18.4.0, a release
-v2.17/v2.17.0/bookworm/Dockerfile           <- older scheme, v2.<PG major> lines
+v2.18.4/v2.18.4.0/bookworm/Dockerfile   <- branch v2.18.4.0, a release
+v2.17/v2.17.0/bookworm/Dockerfile       <- older scheme, v2.<PG major> lines
 ```
 
 Pushing such a branch publishes those images, candidates included:
-`v2.18.6.0-rc1` yields `v2.18.6.0-rc1-bookworm` and its siblings.
+`v2.18.4.0` yields `v2.18.4.0-bookworm` and its siblings.
 
 The `latest` tag is built on `master` from the highest full release in the tree.
 A release candidate never becomes `latest`, so `latest` never moves ahead of
