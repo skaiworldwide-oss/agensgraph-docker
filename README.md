@@ -8,6 +8,7 @@ not; here each one gets a branch of the same name, and its Dockerfiles live in
 component:
 
 ```
+v2.18.6/v2.18.6.0/bookworm/Dockerfile   <- branch v2.18.6.0, a release
 v2.18.4/v2.18.4.0/bookworm/Dockerfile   <- branch v2.18.4.0, a release
 v2.17/v2.17.0/bookworm/Dockerfile       <- older scheme, v2.<PG major> lines
 ```
@@ -20,6 +21,13 @@ A release candidate never becomes `latest`, so `latest` never moves ahead of
 what has actually shipped.
 
 ## Tag Info
+* **v2.18.6.0**
+  * v2.18.6.0-trixie
+  * v2.18.6.0-bookworm
+  * v2.18.6.0-rocky10
+  * v2.18.6.0-rocky9
+  * v2.18.6.0-alpine3.24
+  * v2.18.6.0-alpine3.23
 * **v2.18.4.0**
   * v2.18.4.0-trixie
   * v2.18.4.0-bookworm
@@ -65,7 +73,7 @@ what has actually shipped.
 ### Quick start
 
 ```shell
-$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.18.4.0
+$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.18.6.0-bookworm
 # Username: agens
 # Password: agensgraph
 # Database: postgres
