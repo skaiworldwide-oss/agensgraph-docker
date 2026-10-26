@@ -1,3 +1,7 @@
+# Derived from docker-library/postgres (MIT License).
+# Modifications Copyright (c) 2019-2026 SKAI Worldwide Co., Ltd.
+# See the LICENSE file at the repository root for the full text.
+
 FROM debian:trixie-slim
 
 # explicitly set user/group IDs
