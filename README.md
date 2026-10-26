@@ -140,3 +140,9 @@ postgres=# MATCH (n) RETURN n;
 * Dockerfile repository : https://github.com/skaiworldwide-oss/agensgraph-docker.git
 * Docker hub repository : https://hub.docker.com/r/skaiworldwide/agensgraph
 
+# License
+AgensGraph itself is released under the Apache License 2.0 together with the
+PostgreSQL License; see the [agensgraph](https://github.com/skaiworldwide-oss/agensgraph)
+repository. The Dockerfiles and scripts in this repository derive from
+[docker-library/postgres](https://github.com/docker-library/postgres) and are
+released under the MIT License; see [LICENSE](LICENSE).
