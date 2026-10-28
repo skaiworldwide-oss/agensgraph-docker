@@ -8,7 +8,7 @@ not; here each one gets a branch of the same name, and its Dockerfiles live in
 component:
 
 ```
-v2.18.6/v2.18.6.0/bookworm/Dockerfile   <- branch v2.18.6.0, a release
+v2.18.6/v2.18.6.1/bookworm/Dockerfile   <- branch v2.18.6.1, a release
 v2.18.4/v2.18.4.0/bookworm/Dockerfile   <- branch v2.18.4.0, a release
 v2.17/v2.17.0/bookworm/Dockerfile       <- older scheme, v2.<PG major> lines
 ```
@@ -27,6 +27,13 @@ a release does not rebuild `latest` by itself; run
 `gh workflow run latest-alpine.yml --ref master` right after it.
 
 ## Tag Info
+* **v2.18.6.1**
+  * v2.18.6.1-trixie
+  * v2.18.6.1-bookworm
+  * v2.18.6.1-rocky10
+  * v2.18.6.1-rocky9
+  * v2.18.6.1-alpine3.24
+  * v2.18.6.1-alpine3.23
 * **v2.18.6.0**
   * v2.18.6.0-trixie
   * v2.18.6.0-bookworm
@@ -79,7 +86,7 @@ a release does not rebuild `latest` by itself; run
 ### Quick start
 
 ```shell
-$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.18.6.0-bookworm
+$ docker run --name agensgraph -e POSTGRES_PASSWORD=agensgraph -d skaiworldwide/agensgraph:v2.18.6.1-bookworm
 # Username: agens
 # Password: agensgraph
 # Database: postgres
