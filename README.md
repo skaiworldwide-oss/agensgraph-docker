@@ -20,8 +20,9 @@ The `latest` tag is built on `master` from the newest published release of
 [agensgraph](https://github.com/skaiworldwide-oss/agensgraph/releases), whatever
 folders `master` holds. A draft, a pre-release or a folder merged ahead of its
 release never becomes `latest`, so `latest` never moves ahead of what has
-actually shipped. Nor does `latest` ever move back: a release older than the
-version `latest` holds, such as a patch to an older line, is skipped. Publishing
+actually shipped. `latest` is pushed only for a release newer than the version
+it holds: a push to `master` with no new release deploys nothing, and a patch to
+an older line never moves `latest` back. Publishing
 a release does not rebuild `latest` by itself; run
 `gh workflow run latest-alpine.yml --ref master` right after it.
 
