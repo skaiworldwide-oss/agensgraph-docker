@@ -1,8 +1,11 @@
 name: latest build
 
 on:
-  # latest is published by hand only, so that merging to master never deploys
-  # anything: gh workflow run latest-alpine.yml --ref master
+  push:
+    branches:
+      - 'master'
+  # Publishing a release does not reach this repository, so latest is rebuilt
+  # by hand right after it: gh workflow run latest-alpine.yml --ref master
   workflow_dispatch:
 
 jobs:

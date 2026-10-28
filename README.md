@@ -16,13 +16,15 @@ v2.17/v2.17.0/bookworm/Dockerfile       <- older scheme, v2.<PG major> lines
 Pushing such a branch publishes those images, candidates included:
 `v2.18.4.0` yields `v2.18.4.0-bookworm` and its siblings.
 
-The `latest` tag is published by hand only; merging to `master` deploys nothing.
-Run `gh workflow run latest-alpine.yml --ref master` once the release is out and
-its folder is on `master`. The workflow builds the newest published release of
+The `latest` tag is built on `master` from the newest published release of
 [agensgraph](https://github.com/skaiworldwide-oss/agensgraph/releases), whatever
-folders `master` holds, so a draft, a pre-release or a folder merged ahead of
-its release never becomes `latest`. It pushes only for a release newer than the
-version `latest` holds, so a patch to an older line never moves `latest` back.
+folders `master` holds. A draft, a pre-release or a folder merged ahead of its
+release never becomes `latest`, so `latest` never moves ahead of what has
+actually shipped. `latest` is pushed only for a release newer than the version
+it holds: a push to `master` with no new release deploys nothing, and a patch to
+an older line never moves `latest` back. Publishing
+a release does not rebuild `latest` by itself; run
+`gh workflow run latest-alpine.yml --ref master` right after it.
 
 ## Tag Info
 * **v2.18.6.0**
