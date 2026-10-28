@@ -40,16 +40,17 @@ jobs:
           # drafts and pre-releases.
           TAG="$(gh api repos/skaiworldwide-oss/agensgraph/releases/latest --jq .tag_name)"
 
-          # A patch to an older line is marked as the latest release by default
-          # once published, so latest is never moved below the version it holds.
-          # Every image carries its version in AG_VERSION; an equal version is
-          # rebuilt, which picks up a newer base image.
+          # latest is pushed only for a release newer than the version it holds,
+          # read from AG_VERSION in the image. An equal version is not rebuilt, so
+          # a push to master that brings no new release deploys nothing, and a
+          # patch to an older line, which is marked as the latest release by
+          # default once published, never moves latest back.
           CURRENT="$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Image}}' |
             jq -r '(if .config then .config.Env else (to_entries[0].value.config.Env) end)[]
                    | select(startswith("AG_VERSION=")) | sub("^AG_VERSION="; "")')"
-          if [ -n "$CURRENT" ] &&
-             [ "$(printf '%s\n' "${CURRENT#v}" "${TAG#v}" | sort -V | head -n1)" != "${CURRENT#v}" ]; then
-            echo "::notice::Release $TAG is older than latest ($CURRENT); latest is left as it is"
+          NEWEST="$(printf '%s\n' "${CURRENT#v}" "${TAG#v}" | sort -V | tail -n1)"
+          if [ -n "$CURRENT" ] && { [ "${TAG#v}" = "${CURRENT#v}" ] || [ "$NEWEST" != "${TAG#v}" ]; }; then
+            echo "::notice::Release $TAG is not newer than latest ($CURRENT); latest is left as it is"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
