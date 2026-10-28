@@ -1,11 +1,8 @@
 name: latest build
 
 on:
-  push:
-    branches:
-      - 'master'
-  # Publishing a release does not reach this repository, so latest is rebuilt
-  # by hand right after it: gh workflow run latest-alpine.yml --ref master
+  # latest is published by hand only, so that merging to master never deploys
+  # anything: gh workflow run latest-alpine.yml --ref master
   workflow_dispatch:
 
 jobs:
@@ -30,6 +27,9 @@ jobs:
   
       - name: Find the latest released version
         id: find
+        # bash alone runs with -eo pipefail; the default shell lacks pipefail, so
+        # a failed image lookup would leave CURRENT empty and skip the check.
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:latest
