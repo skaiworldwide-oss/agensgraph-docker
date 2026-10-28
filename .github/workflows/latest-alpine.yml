@@ -30,6 +30,9 @@ jobs:
   
       - name: Find the latest released version
         id: find
+        # bash alone runs with -eo pipefail; the default shell lacks pipefail, so
+        # a failed image lookup would leave CURRENT empty and skip the check.
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:latest
