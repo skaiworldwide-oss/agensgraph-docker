@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - 'master'
+  # Publishing a release does not reach this repository, so latest is rebuilt
+  # by hand right after it: gh workflow run latest-alpine.yml --ref master
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -25,14 +28,41 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
   
-      - name: Find highest versioned subfolder
+      - name: Find the latest released version
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:latest
         run: |
-          # Assigning first propagates FindVer's exit status; inside echo's
-          # argument a failure would be swallowed and leave SUB_DIR empty.
-          SUB_DIR="$(python3 ./.github/workflows/FindVer.py)"
-          echo "SUB_DIR=$SUB_DIR" >> $GITHUB_ENV
+          # latest follows the newest published release of the agensgraph
+          # repository, not the highest folder on master, so that a folder merged
+          # ahead of its release never reaches latest. releases/latest skips
+          # drafts and pre-releases.
+          TAG="$(gh api repos/skaiworldwide-oss/agensgraph/releases/latest --jq .tag_name)"
+
+          # A patch to an older line is marked as the latest release by default
+          # once published, so latest is never moved below the version it holds.
+          # Every image carries its version in AG_VERSION; an equal version is
+          # rebuilt, which picks up a newer base image.
+          CURRENT="$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Image}}' |
+            jq -r '(if .config then .config.Env else (to_entries[0].value.config.Env) end)[]
+                   | select(startswith("AG_VERSION=")) | sub("^AG_VERSION="; "")')"
+          if [ -n "$CURRENT" ] &&
+             [ "$(printf '%s\n' "${CURRENT#v}" "${TAG#v}" | sort -V | head -n1)" != "${CURRENT#v}" ]; then
+            echo "::notice::Release $TAG is older than latest ($CURRENT); latest is left as it is"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          DIRS=(v*/"$TAG"/)
+          if [ ${#DIRS[@]} -ne 1 ] || [ ! -d "${DIRS[0]}" ]; then
+            echo "No single version folder for release $TAG" >&2
+            exit 1
+          fi
+          echo "SUB_DIR=./${DIRS[0]}" >> $GITHUB_ENV
 
       - name: Build and push
+        if: steps.find.outputs.skip != 'true'
         uses: docker/build-push-action@v6
         with:
           context: ${{ env.SUB_DIR }}alpine3.24/
