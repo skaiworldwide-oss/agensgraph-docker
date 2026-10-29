@@ -10,6 +10,8 @@ RUN set -eux; \
 	install --verbose --directory --owner postgres --group postgres --mode 1777 /var/lib/postgresql
 
 RUN set -ex; \
+# bullseye is past its LTS: its security updates live on archive.debian.org now
+	sed -i "s|deb.debian.org/debian-security|archive.debian.org/debian-security|" /etc/apt/sources.list; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		gnupg \
@@ -93,9 +95,6 @@ RUN set -eux; \
     apt-get install -y $build_deps pax-utils; \
     cd /usr/src/postgresql; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
-# explicitly update autoconf config.guess and config.sub so they support more arches/libcs
-	wget -O config/config.guess 'https://git.savannah.gnu.org/cgit/config.git/plain/config.guess?id=7d3d27baf8107b630586c962c057e22149653deb'; \
-	wget -O config/config.sub 'https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=7d3d27baf8107b630586c962c057e22149653deb'; \
 # configure options taken from:
 # https://anonscm.debian.org/cgit/pkg-postgresql/postgresql.git/tree/debian/rules?h=9.5
 	./configure \
