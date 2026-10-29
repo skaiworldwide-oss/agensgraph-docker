@@ -3,14 +3,15 @@ name: debian build
 on:
   push:
     branches:
-      - 'v*'   # a branch per version, named after its upstream tag
+      - '*'
+      - '!master'   # excludes master
 
 jobs:
   docker:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        debian_version: [bookworm, trixie]  # Builds for Bookworm and Trixie
+        debian_version: [bookworm, bullseye]  # Builds for Bookworm and Bullseye
 
     steps:
       - name: Checkout
@@ -33,16 +34,7 @@ jobs:
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
       - name: Extract Parent Version
-        run: |
-          # The line folder is the version without its last component: v2.18.4.0
-          # sits under v2.18.4, and the older v2.17.0 under v2.17.
-          version="${BRANCH_NAME#v}"
-          IFS='.' read -r major minor patch build <<< "$version"
-          if [ -n "$build" ]; then
-            echo "PARENT_VERSION=v$major.$minor.$patch" >> $GITHUB_ENV
-          else
-            echo "PARENT_VERSION=v$major.$minor" >> $GITHUB_ENV
-          fi
+        run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
 
       - name: Build and push ${{ matrix.debian_version }}
         uses: docker/build-push-action@v6

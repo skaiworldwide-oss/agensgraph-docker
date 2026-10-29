@@ -3,15 +3,12 @@ name: rockylinux build
 on:
   push:
     branches:
-      - 'v*'   # a branch per version, named after its upstream tag
+      - '*'
+      - '!master'   # excludes master
 
 jobs:
   docker:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rocky_version: ['9', '10']  # Builds for Rocky Linux 9 and 10
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,21 +30,12 @@ jobs:
         run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
       - name: Extract Parent Version
-        run: |
-          # The line folder is the version without its last component: v2.18.4.0
-          # sits under v2.18.4, and the older v2.17.0 under v2.17.
-          version="${BRANCH_NAME#v}"
-          IFS='.' read -r major minor patch build <<< "$version"
-          if [ -n "$build" ]; then
-            echo "PARENT_VERSION=v$major.$minor.$patch" >> $GITHUB_ENV
-          else
-            echo "PARENT_VERSION=v$major.$minor" >> $GITHUB_ENV
-          fi
+        run: echo "PARENT_VERSION=$(echo ${{ env.BRANCH_NAME }} | grep -oP 'v\d+\.\d+')" >> $GITHUB_ENV
 
-      - name: Build and push for Rocky Linux ${{ matrix.rocky_version }}
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/rockylinux${{ matrix.rocky_version }}/
+          context: ${{ env.PARENT_VERSION }}/${{ env.BRANCH_NAME }}/rockylinux/
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-rocky${{ matrix.rocky_version }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/agensgraph:${{ env.BRANCH_NAME }}-rocky
