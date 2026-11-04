@@ -13,8 +13,18 @@ v2.18.4/v2.18.4.0/bookworm/Dockerfile   <- branch v2.18.4.0, a release
 v2.17/v2.17.0/bookworm/Dockerfile       <- older scheme, v2.<PG major> lines
 ```
 
-Pushing such a branch publishes those images, candidates included:
-`v2.18.4.0` yields `v2.18.4.0-bookworm` and its siblings.
+Pushing such a branch publishes nothing. The images are built by hand, and
+only for a version agensgraph has released: run each of the debian, alpine and
+rockylinux workflows on the branch, from Actions -> Run workflow or with
+
+```
+gh workflow run debian.yml --ref v2.18.6.1
+```
+
+Each run first checks that agensgraph has a published release named after the
+branch; a draft, a bare tag or any other branch stops it before anything is
+pushed. A pre-release counts, so a candidate still gets its images:
+`v2.18.6.1` yields `v2.18.6.1-bookworm` and its siblings.
 
 The `latest` tag is built on `master` from the newest published release of
 [agensgraph](https://github.com/skaiworldwide-oss/agensgraph/releases), whatever
