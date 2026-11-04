@@ -26,12 +26,6 @@ branch; a draft, a bare tag or any other branch stops it before anything is
 pushed. A pre-release counts, so a candidate still gets its images:
 `v2.18.6.1` yields `v2.18.6.1-bookworm` and its siblings.
 
-Keep the Docker Hub secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`) in the
-`dockerhub` environment only, never as repository secrets. These workflows name
-that environment; a workflow left on an older version branch does not, so when it
-still builds on a push it cannot log in and cannot push. Rebuilding such a
-version means bringing these workflows to its branch first.
-
 The `latest` tag is built on `master` from the newest published release of
 [agensgraph](https://github.com/skaiworldwide-oss/agensgraph/releases), whatever
 folders `master` holds. A draft, a pre-release or a folder merged ahead of its

@@ -9,9 +9,6 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    # The Docker Hub secrets live in this environment, so a workflow that does
-    # not name it, such as one left on an older version branch, cannot push.
-    environment: dockerhub
     strategy:
       matrix:
         debian_version: [bookworm, trixie]  # Builds for Bookworm and Trixie

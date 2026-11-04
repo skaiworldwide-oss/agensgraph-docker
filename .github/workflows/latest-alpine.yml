@@ -11,8 +11,6 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    # Holds the Docker Hub secrets; see the version workflows.
-    environment: dockerhub
     steps:
 
       - name: Checkout
