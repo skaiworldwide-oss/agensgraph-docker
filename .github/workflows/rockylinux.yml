@@ -1,9 +1,9 @@
 name: rockylinux build
 
 on:
-  push:
-    branches:
-      - 'v*'   # a branch per version, named after its upstream tag
+  # By hand only: Actions -> Run workflow, picking this branch. A push deploys
+  # nothing, so the branch can be patched safely.
+  workflow_dispatch:
 
 jobs:
   docker:
