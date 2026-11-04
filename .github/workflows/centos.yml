@@ -1,10 +1,9 @@
 name: centos build
 
 on:
-  push:
-    branches:
-      - '*'
-      - '!master'   # excludes master
+  # By hand only: Actions -> Run workflow, picking this branch. A push deploys
+  # nothing, so the branch can be patched safely.
+  workflow_dispatch:
 
 jobs:
   docker:
